@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <script src="helpers.js?v=1" charset="utf-8"></script>
+  </head>
+  <body>
+    <p>
+      <video id="video" controls width="400" />
+    </p>
+
+    <script charset="utf-8">
+      const video = document.querySelector("video");
+      const url = "https://localhost.python3.ninja/bunny.webm";
+
+      let size = 0;
+      let end = 0;
+      let offset = 1024 * 500;
+      let start = 0;
+      let iterate = 0;
+
+      const mediaSource = new MediaSource();
+      video.src = URL.createObjectURL(mediaSource);
+      mediaSource.addEventListener("sourceopen", sourceOpen);
+
+      function sourceOpen() {
+        const sourceBuffer = mediaSource.addSourceBuffer(
+          'video/webm; codecs="vp8,vorbis"'
+        );
+        // get filesize
+        fetch(url, { method: "HEAD" }).then((response) => {
+          size = response.headers.get("Content-Length");
+          end = start + offset;
+          updateFetch();
+        });
+
+        sourceBuffer.addEventListener("updateend", () => {
+          console.log("Fired updateend");
+          updateFetch();
+        });
+
+        const updateFetch = () => {
+          console.log(
+            "start",
+            formatBytes(start),
+            "end",
+            formatBytes(end),
+            "size",
+            formatBytes(size),
+            iterate++
+          );
+          if (start > size  ) {
+            console.log('finish')
+            return null;
+          }
+
+          console.log(">>", mediaSource);
+
+          console.log('>>range', fDec(start), fDec(end), fDec(size));
+          fetch(url, { headers: { range: `bytes=${start}-${end}` } })
+            .then((d) => d.arrayBuffer())
+            .then((data) => {
+              const oldEnd = end;
+              end = end + offset;
+              if (end >= size) {
+                end = size;
+              }
+              start = oldEnd+1;
+
+              try {
+                sourceBuffer.appendBuffer(data);
+              } catch (e) {
+                console.error(e);
+              }
+            });
+        };
+      }
+    </script>
+  </body>
+</html>

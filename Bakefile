@@ -1,0 +1,4 @@
+run:
+    python -m RangeHTTPServer
+proxy:
+    cloudflared tunnel --hostname localhost.python3.ninja --url http://localhost:8000
